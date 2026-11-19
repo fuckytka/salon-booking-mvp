@@ -1,0 +1,715 @@
+---
+openapi: 3.0.3
+info:
+  title: Салон Лінія
+  version: 1.0.0
+  description: Час у відповідях — UTC. Місткість слота спільна для всіх послуг. Для
+    запису потрібна cookie поточного користувача.
+servers:
+- url: "/api/v1"
+paths:
+  "/session":
+    get:
+      summary: Поточний профіль або null
+      security: []
+      responses:
+        '200':
+          description: Сеанс
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Session"
+        '503':
+          description: storage_error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+  "/register":
+    post:
+      summary: Реєстрація клієнта та відкриття сеансу
+      security: []
+      responses:
+        '201':
+          description: Профіль створено
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Session"
+        '503':
+          description: storage_error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        '415':
+          description: json_required
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        '422':
+          description: invalid_data
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        '409':
+          description: account_exists
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Register"
+  "/login":
+    post:
+      summary: Вхід
+      security: []
+      responses:
+        '200':
+          description: Сеанс відкрито
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Session"
+        '503':
+          description: storage_error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        '415':
+          description: json_required
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        '422':
+          description: invalid_data
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        '401':
+          description: invalid_credentials
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Login"
+  "/logout":
+    post:
+      summary: Завершення сеансу
+      security: []
+      responses:
+        '200':
+          description: Сеанс закрито
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Session"
+        '503':
+          description: storage_error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        '415':
+          description: json_required
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        '422':
+          description: invalid_data
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Empty"
+  "/services":
+    get:
+      summary: Активні послуги
+      security: []
+      responses:
+        '200':
+          description: Каталог
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/Service"
+        '503':
+          description: storage_error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+  "/slots":
+    get:
+      summary: Вільні слоти для послуги
+      security: []
+      responses:
+        '200':
+          description: Вільний час
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/Slot"
+        '503':
+          description: storage_error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        '404':
+          description: not_found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        '422':
+          description: invalid_data
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+      parameters:
+      - name: service_id
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
+  "/bookings":
+    get:
+      summary: Історія власних записів
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          description: Список
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/Booking"
+        '503':
+          description: storage_error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        '403':
+          description: forbidden
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        '401':
+          description: login_required
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+    post:
+      summary: Зайняти одне місце
+      security:
+      - sessionCookie: []
+      responses:
+        '201':
+          description: Створено
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Booking"
+        '200':
+          description: Ідемпотентний повтор
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Booking"
+        '503':
+          description: storage_error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        '415':
+          description: json_required
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        '422':
+          description: invalid_data
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        '403':
+          description: forbidden
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        '404':
+          description: not_found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        '409':
+          description: slot_unavailable або request_conflict
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        '401':
+          description: login_required
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/CreateBooking"
+  "/bookings/{booking_id}":
+    get:
+      summary: Власний запис
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          description: Бронювання
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Booking"
+        '503':
+          description: storage_error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        '403':
+          description: forbidden
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        '404':
+          description: not_found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        '401':
+          description: login_required
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+      parameters:
+      - name: booking_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    patch:
+      summary: Скасувати власний запис
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          description: Скасовано або вже скасовано
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Booking"
+        '503':
+          description: storage_error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        '415':
+          description: json_required
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        '422':
+          description: invalid_data
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        '403':
+          description: forbidden
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        '404':
+          description: not_found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        '401':
+          description: login_required
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Cancel"
+      parameters:
+      - name: booking_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+  "/schedule":
+    get:
+      summary: Завантаженість майбутніх слотів для працівника
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          description: Розклад
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  "$ref": "#/components/schemas/Slot"
+        '503':
+          description: storage_error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        '403':
+          description: forbidden
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        '401':
+          description: login_required
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+  "/schedule/{timeslot_id}":
+    patch:
+      summary: Блокування чи відкриття слота
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          description: Розклад оновлено
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Block"
+        '503':
+          description: storage_error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        '415':
+          description: json_required
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        '422':
+          description: invalid_data
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        '403':
+          description: forbidden
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        '404':
+          description: not_found
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        '409':
+          description: slot_occupied
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+        '401':
+          description: login_required
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/Block"
+      parameters:
+      - name: timeslot_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: salon_session
+  schemas:
+    Session:
+      type: object
+      required:
+      - user
+      properties:
+        user:
+          type: object
+          required:
+          - full_name
+          - role
+          properties:
+            full_name:
+              type: string
+            role:
+              type: string
+              enum:
+              - customer
+              - employee
+              - admin
+          nullable: true
+    Service:
+      type: object
+      required:
+      - service_id
+      - title
+      - duration
+      - price
+      properties:
+        service_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        duration:
+          type: integer
+        price:
+          type: integer
+    Slot:
+      type: object
+      required:
+      - timeslot_id
+      - start_at
+      - end_at
+      - capacity
+      - is_blocked
+      - active_count
+      - remaining_capacity
+      properties:
+        timeslot_id:
+          type: string
+          format: uuid
+        start_at:
+          type: string
+          format: date-time
+        end_at:
+          type: string
+          format: date-time
+        capacity:
+          type: integer
+          enum:
+          - 3
+        is_blocked:
+          type: boolean
+        active_count:
+          type: integer
+        remaining_capacity:
+          type: integer
+    Booking:
+      type: object
+      required:
+      - booking_id
+      - request_id
+      - status
+      - service_id
+      - timeslot_id
+      - created_at
+      - cancelled_at
+      - service_title
+      - start_at
+      - end_at
+      properties:
+        booking_id:
+          type: string
+          format: uuid
+        request_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+          - confirmed
+          - cancelled
+        service_id:
+          type: string
+          format: uuid
+        timeslot_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        cancelled_at:
+          type: string
+          format: date-time
+          nullable: true
+        service_title:
+          type: string
+        start_at:
+          type: string
+          format: date-time
+        end_at:
+          type: string
+          format: date-time
+    CreateBooking:
+      type: object
+      required:
+      - request_id
+      - service_id
+      - timeslot_id
+      properties:
+        request_id:
+          type: string
+          format: uuid
+        service_id:
+          type: string
+          format: uuid
+        timeslot_id:
+          type: string
+          format: uuid
+    Cancel:
+      type: object
+      required:
+      - status
+      properties:
+        status:
+          type: string
+          enum:
+          - cancelled
+    Block:
+      type: object
+      required:
+      - is_blocked
+      properties:
+        is_blocked:
+          type: boolean
+    Login:
+      type: object
+      required:
+      - email
+      - password
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 128
+    Register:
+      type: object
+      required:
+      - full_name
+      - email
+      - password
+      properties:
+        full_name:
+          type: string
+          minLength: 2
+          maxLength: 80
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 128
+    Error:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          properties:
+            code:
+              type: string
+              enum:
+              - account_exists
+              - forbidden
+              - invalid_credentials
+              - invalid_data
+              - json_required
+              - login_required
+              - not_found
+              - request_conflict
+              - slot_occupied
+              - slot_unavailable
+              - storage_error
+            field:
+              type: string
+    Empty:
+      type: object
