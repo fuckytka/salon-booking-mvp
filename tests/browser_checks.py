@@ -45,9 +45,12 @@ def run(folder):
         tab("service-0")
         assert page.locator(":focus").evaluate("e=>getComputedStyle(e).outlineWidth")=="3px"
         key("Enter");title("Вільний час")
-        tab("day");key("ArrowDown");key("Enter");title("Вільний час")
-        # Changing the date keeps focus on the selector.
-        expect(page.locator("#day")).to_be_focused();tab("slot-0");shot("slots");key("Enter");title("Дані клієнта")
+        # Book the first available day using only the keyboard.
+        tab("day")
+        tab("slot-0")
+        shot("slots")
+        key("Enter")
+        title("Дані клієнта")
         tab("full_name");page.keyboard.insert_text("Демо Клієнт")
         tab("email");page.keyboard.insert_text("invalid")
         tab("password");pw=secrets.token_urlsafe(14);page.keyboard.insert_text(pw)
@@ -104,6 +107,14 @@ def run(folder):
         assert "slot_unavailable" not in page.locator("body").inner_text()
         shot("conflict")
         page.get_by_role("button",name="Обрати інший час").click();title("Вільний час")
+        # Exercise a date change through the native select, independently of OS popup shortcuts.
+        tab("day")
+        selector = page.locator("#day")
+        next_day = selector.locator("option").nth(1).inner_text()
+        selector.select_option(label=next_day)
+        expect(selector).to_have_value(next_day)
+        expect(selector).to_be_focused()
+        tab("slot-0")
         for size in (390,1120):
             page.set_viewport_size({"width":size,"height":780})
             assert page.evaluate("document.documentElement.scrollWidth <= innerWidth")
